@@ -1,3 +1,7 @@
 # slack-reminder
 
-HI
+ENV required:
+- SLACK_SIMPLE_BOT_TOKEN
+
+
+
