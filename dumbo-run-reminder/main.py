@@ -3,6 +3,8 @@ import requests
 import os
 from slack_sdk import WebClient
 import time
+import datetime
+import pytz
 
 DISNEY_EVENT_STATUS_URL = "https://www.rundisney.com/run/api/v1/content/520589,521173,520608,520572,521126,436597,521123,520545,520548,411920,520558/event-cache/disneyland-half-marathon-weekend/?page=%2Fevents%2Fdisneyland%2Fdisneyland-half-marathon-weekend%2F"
 
@@ -35,11 +37,30 @@ def get_dumbo_run_event_status(event_status_url=DISNEY_EVENT_STATUS_URL) -> dict
         print(f"Error getting event status: {e}")
         return None
 
+def daily_liveness_report(client: SimpleBot, daily_reminder_hour:int = 10) -> None:
+    """
+    send a simple message everyday 10:00 am PST
+    """
+    pst = pytz.timezone("America/Los_Angeles")
+
+    now_pst = datetime.datetime.now(pst)
+    target_time = pst.localize(datetime.datetime.combine(now_pst.date(), datetime.time(daily_reminder_hour, 0, 0)))
+
+    start_time = target_time
+    end_time = target_time + datetime.timedelta(minutes=1)
+
+    if start_time <= now_pst < end_time:
+        client.send_message(CHANNEL_ID, "I am still working! :elephant:")
+    
+    # else do nothing
+    return
+
 
 
 def main_loop(client: SimpleBot):
     last_status = SOLD_OUT_STATUS
     while True:
+        daily_liveness_report()
         event_status = get_dumbo_run_event_status()
         print(f"received event status: {event_status}")
         if event_status is not None:
@@ -51,6 +72,8 @@ def main_loop(client: SimpleBot):
                     client.send_message(CHANNEL_ID, NOT_SOLD_OUT_MESSAGE)
             # else do nothing
         time.sleep(CHECK_EVERY_X_SECONDS)
+
+
 if __name__ == "__main__":
     bot_token = os.getenv('SLACK_SIMPLE_BOT_TOKEN')
     client = SimpleBot(bot_token)
